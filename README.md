@@ -1,66 +1,103 @@
 # Livewire 3 to 4 Upgrade Guide
 
-A comprehensive guide for upgrading Laravel Livewire from version 3 to version 4. This documentation provides step-by-step instructions, breaking changes, migration patterns, and best practices.
+Comprehensive upgrade guide and tooling for migrating Laravel Livewire from version 3 to version 4. This package provides step-by-step instructions, code patterns, and a `/upgrade-livewire` slash command for Claude Code.
 
 ## Features
 
-- **Breaking Changes Reference** - Complete list of deprecated and changed APIs
-- **Migration Patterns** - Code examples for updating common patterns
-- **Compatibility Checklist** - Verify your codebase is ready
-- **Testing Guide** - Ensure your components work after upgrade
-- **Package Compatibility** - Guide for updating packages that depend on Livewire
+- **Step-by-Step Migration** - Complete guide for applications and packages
+- **Breaking Changes Reference** - All deprecations and behavior changes
+- **Code Patterns** - Before/after examples for common patterns
+- **Slash Command** - `/upgrade-livewire` command for Claude Code assistance
+- **Testing Guide** - Verify your upgrade with comprehensive testing
+- **Troubleshooting** - Solutions for common upgrade issues
 
-## Quick Start
+## What's Included
 
-### Prerequisites
-
-- PHP 8.1 or higher
-- Laravel 10, 11, or 12
-- Livewire 3.x currently installed
-
-### Basic Upgrade
-
-```bash
-# Update composer.json
-composer require livewire/livewire:^4.0
-
-# Clear caches
-php artisan view:clear
-php artisan cache:clear
+```text
+claude-upgrade-to-livewire-4/
+├── README.md                      # This file
+├── install.sh                     # One-command installer
+├── upgrade-livewire.md            # /upgrade-livewire slash command
+├── livewire-upgrade-guide.md      # Complete upgrade reference
+├── docs/                          # Detailed documentation
+│   ├── 01-overview/               # What's new, compatibility
+│   ├── 02-breaking-changes/       # Deprecations, removed features
+│   ├── 03-migration-guide/        # Step-by-step upgrade
+│   ├── 04-patterns/               # Code migration patterns
+│   └── 05-testing/                # Testing your upgrade
+└── LICENSE
 ```
 
-## Documentation
+## Quick Install
 
-See the [full documentation](docs/README.md) for detailed upgrade instructions.
+### One-Line Install
 
-### Quick Links
+```bash
+curl -fsSL https://raw.githubusercontent.com/nasrulhazim/claude-upgrade-to-livewire-4/main/install.sh | bash
+```
 
-- [Overview](docs/01-overview/README.md) - What's new in Livewire 4
-- [Breaking Changes](docs/02-breaking-changes/README.md) - API changes and deprecations
-- [Migration Guide](docs/03-migration-guide/README.md) - Step-by-step upgrade process
-- [Patterns](docs/04-patterns/README.md) - Common migration patterns
-- [Testing](docs/05-testing/README.md) - Verifying your upgrade
+### Manual Install
 
-## Livewire 4 Highlights
+1. **Clone the repository:**
 
-### New Features
+   ```bash
+   git clone https://github.com/nasrulhazim/claude-upgrade-to-livewire-4.git
+   cd claude-upgrade-to-livewire-4
+   ```
 
-- Improved performance with optimized rendering
-- Enhanced TypeScript support
-- Better error messages and debugging
-- Streamlined attribute syntax
+2. **Run the installer:**
 
-### Backward Compatible
+   ```bash
+   chmod +x install.sh
+   ./install.sh
+   ```
 
-Many Livewire 3 patterns still work in Livewire 4:
+3. **Verify installation:**
 
-- `#[Layout]`, `#[Url]`, `#[Validate]` attributes
-- `$this->dispatch()` for events
-- `wire:model.live`, `wire:navigate`, `wire:confirm` directives
-- `WithPagination`, `WithFileUploads` traits
-- `protected $rules` array validation
-- `protected $queryString` for URL state
-- Lifecycle hooks (`mount`, `updated`, `updating`)
+   ```bash
+   ls -la ~/.claude/
+   # Should see: livewire-upgrade-guide.md, commands/upgrade-livewire.md
+   ```
+
+## What Gets Installed
+
+The installer copies these files to your `~/.claude` directory:
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `livewire-upgrade-guide.md` | `~/.claude/` | Complete upgrade reference |
+| `upgrade-livewire.md` | `~/.claude/commands/` | `/upgrade-livewire` slash command |
+
+## Usage
+
+### Using the Slash Command
+
+In any project with Claude Code:
+
+```bash
+/upgrade-livewire
+```
+
+Claude will:
+
+1. Assess your Livewire components
+2. Identify deprecated patterns
+3. Guide you through the upgrade
+4. Update code as needed
+5. Verify with tests
+
+### Quick Upgrade (Manual)
+
+```bash
+# 1. Update dependency
+composer require livewire/livewire:^4.0
+
+# 2. Clear caches
+php artisan optimize:clear
+
+# 3. Run tests
+composer test
+```
 
 ## Version Compatibility
 
@@ -69,21 +106,90 @@ Many Livewire 3 patterns still work in Livewire 4:
 | 4.x | 8.1+ | 10.x, 11.x, 12.x |
 | 3.x | 8.1+ | 10.x, 11.x, 12.x |
 
-## Installation
+## Backward Compatible Features
 
-### For Claude Code Users
+These Livewire 3 patterns work unchanged in Livewire 4:
 
-Copy the upgrade guide to your Claude commands:
+```php
+// Attributes
+#[Layout('layouts.app')]
+#[Url]
+#[Validate('required')]
+#[Computed]
+#[On('event-name')]
 
-```bash
-cp docs/upgrade-livewire.md ~/.claude/commands/
+// Event dispatching
+$this->dispatch('event-name');
+
+// Validation
+protected array $rules = ['name' => 'required'];
+
+// URL state
+protected $queryString = ['search' => ['except' => '']];
+
+// Traits
+use WithPagination;
+use WithFileUploads;
 ```
 
-Then use `/upgrade-livewire` in any project.
+### Blade Directives (Unchanged)
 
-### Manual Reference
+```blade
+wire:model
+wire:model.live
+wire:model.blur
+wire:click
+wire:navigate
+wire:confirm
+wire:loading
+```
 
-Browse the `docs/` directory for detailed documentation.
+## Deprecated Patterns
+
+These patterns still work but should be updated:
+
+```php
+// Before (deprecated)
+$this->emit('event');
+$this->emitTo('component', 'event');
+
+// After (recommended)
+$this->dispatch('event');
+$this->dispatch('event')->to('component');
+```
+
+## Documentation Structure
+
+```text
+docs/
+├── 01-overview/
+│   ├── 01-whats-new.md            # New features in Livewire 4
+│   ├── 02-compatibility.md        # Version requirements
+│   └── 03-upgrade-assessment.md   # Assess your codebase
+├── 02-breaking-changes/
+│   ├── 01-deprecations.md         # Deprecated features
+│   ├── 02-removed-features.md     # Removed features
+│   └── 03-behavior-changes.md     # Changed behaviors
+├── 03-migration-guide/
+│   ├── 01-getting-started.md      # Prerequisites
+│   ├── 02-application-upgrade.md  # App upgrade steps
+│   ├── 03-package-upgrade.md      # Package upgrade steps
+│   └── 04-troubleshooting.md      # Common issues
+├── 04-patterns/
+│   ├── 01-event-patterns.md       # Event migration
+│   ├── 02-validation-patterns.md  # Validation patterns
+│   └── 03-state-management.md     # State management
+└── 05-testing/
+    ├── 01-unit-testing.md         # Component tests
+    └── 02-integration-testing.md  # Integration tests
+```
+
+## Requirements
+
+- **Claude Code** - Latest version
+- **PHP** - 8.1 or higher
+- **Laravel** - 10.x, 11.x, or 12.x
+- **Livewire** - Currently on 3.x
 
 ## Contributing
 
@@ -96,13 +202,28 @@ Contributions welcome! Please:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see LICENSE file for details
+
+## Support
+
+- **Issues**: [GitHub Issues](https://github.com/nasrulhazim/claude-upgrade-to-livewire-4/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/nasrulhazim/claude-upgrade-to-livewire-4/discussions)
 
 ## Resources
 
 - [Livewire Official Documentation](https://livewire.laravel.com/docs)
 - [Livewire GitHub Repository](https://github.com/livewire/livewire)
 - [Laravel Documentation](https://laravel.com/docs)
+
+## Changelog
+
+### v1.0.0 (2026-01-21)
+
+- Initial release
+- Complete upgrade documentation
+- `/upgrade-livewire` slash command
+- Migration patterns and examples
+- Testing documentation
 
 ---
 
