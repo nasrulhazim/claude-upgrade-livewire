@@ -2,6 +2,10 @@
 
 Comprehensive upgrade guide and tooling for migrating Laravel Livewire from version 3 to version 4. This package provides step-by-step instructions, code patterns, and a `/upgrade-livewire` slash command for Claude Code.
 
+<center>
+<img src="screenshot.png">
+</center>
+
 ## Features
 
 - **Step-by-Step Migration** - Complete guide for applications and packages
