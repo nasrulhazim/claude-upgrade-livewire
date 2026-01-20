@@ -17,19 +17,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Detect installation method
-if [ -d ".git" ] && [ -f "upgrade-livewire.md" ]; then
-    # Running from cloned repository
-    INSTALL_MODE="local"
-    REPO_DIR="$(pwd)"
-    echo -e "${BLUE}ℹ️  Installing from local repository${NC}"
-else
-    # Running from curl | bash
-    INSTALL_MODE="remote"
-    REPO_URL="https://raw.githubusercontent.com/nasrulhazim/claude-upgrade-livewire/main"
-    echo -e "${BLUE}ℹ️  Installing from remote repository${NC}"
-fi
+# Repository URL
+REPO_URL="https://raw.githubusercontent.com/nasrulhazim/claude-upgrade-livewire/main"
 
+echo -e "${BLUE}ℹ️  Installing from GitHub${NC}"
 echo ""
 
 # Check if ~/.claude directory exists
@@ -44,7 +35,7 @@ if [ ! -d ~/.claude/commands ]; then
     mkdir -p ~/.claude/commands
 fi
 
-# Function to install file from local or remote
+# Function to install file from GitHub
 install_file() {
     local source_file=$1
     local dest_file=$2
@@ -60,11 +51,7 @@ install_file() {
         fi
     fi
 
-    if [ "$INSTALL_MODE" = "local" ]; then
-        cp "$REPO_DIR/$source_file" "$dest_file"
-    else
-        curl -fsSL "$REPO_URL/$source_file" -o "$dest_file"
-    fi
+    curl -fsSL "$REPO_URL/$source_file" -o "$dest_file"
 
     if [ -f "$dest_file" ]; then
         echo -e "${GREEN}✓${NC} $file_desc installed"
@@ -99,11 +86,7 @@ echo "   /upgrade-livewire app"
 echo "   /upgrade-livewire package"
 echo ""
 echo "📚 Full README:"
-if [ "$INSTALL_MODE" = "local" ]; then
-echo "   cat $REPO_DIR/README.md"
-else
 echo "   https://github.com/nasrulhazim/claude-upgrade-livewire"
-fi
 echo ""
 echo "🎉 You're all set! Try '/upgrade-livewire' in any Livewire project with Claude Code."
 echo ""
