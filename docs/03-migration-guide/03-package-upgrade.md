@@ -6,6 +6,20 @@ Guide for upgrading Laravel packages that depend on Livewire to support both ver
 
 When maintaining a package, you typically want to support both Livewire 3 and 4 to give users flexibility in their upgrade timeline.
 
+## Identifying a Package vs Application
+
+Before proceeding, ensure you're working on a package:
+
+| Indicator | Package | Application |
+|-----------|---------|-------------|
+| `composer.json` type | `library` | `project` |
+| Source directory | `src/` | `app/` |
+| Has `public/index.php` | No | Yes |
+| Uses `PackageServiceProvider` | Usually | No |
+| Published on Packagist | Yes | Rarely |
+
+If you're working on an application, see [Application Upgrade](02-application-upgrade.md) instead.
+
 ## Step 1: Update Version Constraint
 
 Edit your package's `composer.json`:
@@ -88,7 +102,96 @@ protected function getListeners(): array
 }
 ```
 
-### Avoid Version-Specific Code
+### Version-Aware Component Registration (Service Provider)
+
+For packages with multiple Livewire components, use version-aware registration in your service provider:
+
+```php
+use Livewire\Livewire;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
+
+class MyPackageServiceProvider extends PackageServiceProvider
+{
+    public function configurePackage(Package $package): void
+    {
+        $package
+            ->name('my-package')
+            ->hasConfigFile()
+            ->hasViews();
+    }
+
+    public function packageBooted(): void
+    {
+        $this->registerLivewireComponents();
+    }
+
+    protected function registerLivewireComponents(): void
+    {
+        $version = config('my-package.livewire', 'auto');
+
+        if ($this->shouldUseLivewire4($version)) {
+            // Livewire 4: Register by namespace (cleaner, auto-discovers)
+            Livewire::addNamespace(
+                'my-package',
+                classNamespace: 'Vendor\MyPackage\Livewire'
+            );
+        } else {
+            // Livewire 3: Register each component individually
+            Livewire::component('my-package::component-a', ComponentA::class);
+            Livewire::component('my-package::component-b', ComponentB::class);
+            Livewire::component('my-package::component-c', ComponentC::class);
+        }
+    }
+
+    protected function shouldUseLivewire4(string $version): bool
+    {
+        return match ($version) {
+            'v4' => true,
+            'v3' => false,
+            default => method_exists(Livewire::getFacadeRoot(), 'addNamespace'),
+        };
+    }
+}
+```
+
+### Config File for Version Selection
+
+Add a config option to let users explicitly choose their Livewire version:
+
+```php
+// config/my-package.php
+return [
+    // Livewire version: 'auto', 'v3', or 'v4'
+    // 'auto' detects the installed version automatically
+    'livewire' => 'auto',
+];
+```
+
+This allows users to:
+- Use `'auto'` (default) - Automatically detect Livewire version
+- Use `'v3'` - Force Livewire 3 registration pattern
+- Use `'v4'` - Force Livewire 4 registration pattern
+
+### Auto-Detection Logic
+
+The key to auto-detection is checking for Livewire 4-specific features:
+
+```php
+protected function shouldUseLivewire4(string $version): bool
+{
+    return match ($version) {
+        'v4' => true,
+        'v3' => false,
+        // Auto-detect: addNamespace() exists only in Livewire 4
+        default => method_exists(Livewire::getFacadeRoot(), 'addNamespace'),
+    };
+}
+```
+
+This approach is more reliable than version string comparison because it tests actual capability.
+
+### Version-Specific Code in Components
 
 If you must use version-specific code:
 
@@ -112,7 +215,7 @@ class MyComponent extends Component
 }
 ```
 
-> **Note**: This should rarely be needed as most code is compatible.
+> **Note**: This should rarely be needed as most component code is compatible.
 
 ## Step 3: Update Dependencies
 
@@ -236,6 +339,101 @@ Here's a complete example from updating a package:
         "livewire/livewire": "^3.0 || ^4.0"
     }
 }
+```
+
+## Complete Service Provider Example
+
+Here's a production-ready service provider supporting both Livewire versions:
+
+```php
+<?php
+
+namespace Vendor\MyPackage;
+
+use Vendor\MyPackage\Livewire\Browser;
+use Vendor\MyPackage\Livewire\Editor;
+use Vendor\MyPackage\Livewire\Picker;
+use Livewire\Livewire;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
+
+class MyPackageServiceProvider extends PackageServiceProvider
+{
+    public function configurePackage(Package $package): void
+    {
+        $package
+            ->name('my-package')
+            ->hasConfigFile()
+            ->hasViews();
+    }
+
+    public function packageBooted(): void
+    {
+        $this->registerLivewireComponents();
+    }
+
+    protected function registerLivewireComponents(): void
+    {
+        $version = config('my-package.livewire', 'auto');
+
+        if ($this->shouldUseLivewire4($version)) {
+            // Livewire 4: Register by namespace
+            // Components at src/Livewire/*.php become <livewire:my-package::component-name />
+            Livewire::addNamespace(
+                'my-package',
+                classNamespace: 'Vendor\MyPackage\Livewire'
+            );
+        } else {
+            // Livewire 3: Register each component manually
+            Livewire::component('my-package::browser', Browser::class);
+            Livewire::component('my-package::editor', Editor::class);
+            Livewire::component('my-package::picker', Picker::class);
+        }
+    }
+
+    protected function shouldUseLivewire4(string $version): bool
+    {
+        return match ($version) {
+            'v4' => true,
+            'v3' => false,
+            default => method_exists(Livewire::getFacadeRoot(), 'addNamespace'),
+        };
+    }
+}
+```
+
+### Config File (config/my-package.php)
+
+```php
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Livewire Version
+    |--------------------------------------------------------------------------
+    |
+    | Configure which Livewire version's registration pattern to use.
+    |
+    | Supported: "auto", "v3", "v4"
+    | - "auto": Automatically detects installed Livewire version (recommended)
+    | - "v3": Force Livewire 3 component registration
+    | - "v4": Force Livewire 4 namespace registration
+    |
+    */
+    'livewire' => 'auto',
+];
+```
+
+### Usage in Blade Templates
+
+Both versions work identically in templates:
+
+```blade
+{{-- These work in both Livewire 3 and 4 --}}
+<livewire:my-package::browser />
+<livewire:my-package::editor :content="$content" />
+<livewire:my-package::picker @selected="handleSelection" />
 ```
 
 ## Checklist
