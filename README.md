@@ -14,7 +14,7 @@ Comprehensive upgrade guide and tooling for migrating Laravel Livewire from vers
 ## What's Included
 
 ```text
-claude-upgrade-to-livewire-4/
+claude-upgrade-livewire/
 ├── README.md                      # This file
 ├── install.sh                     # One-command installer
 ├── upgrade-livewire.md            # /upgrade-livewire slash command
@@ -33,7 +33,7 @@ claude-upgrade-to-livewire-4/
 ### One-Line Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nasrulhazim/claude-upgrade-to-livewire-4/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nasrulhazim/claude-upgrade-livewire/main/install.sh | bash
 ```
 
 ### Manual Install
@@ -41,8 +41,8 @@ curl -fsSL https://raw.githubusercontent.com/nasrulhazim/claude-upgrade-to-livew
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/nasrulhazim/claude-upgrade-to-livewire-4.git
-   cd claude-upgrade-to-livewire-4
+   git clone https://github.com/nasrulhazim/claude-upgrade-livewire.git
+   cd claude-upgrade-livewire
    ```
 
 2. **Run the installer:**
@@ -206,8 +206,8 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/nasrulhazim/claude-upgrade-to-livewire-4/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/nasrulhazim/claude-upgrade-to-livewire-4/discussions)
+- **Issues**: [GitHub Issues](https://github.com/nasrulhazim/claude-upgrade-livewire/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/nasrulhazim/claude-upgrade-livewire/discussions)
 
 ## Resources
 
