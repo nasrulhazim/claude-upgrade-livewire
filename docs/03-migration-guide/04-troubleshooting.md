@@ -79,6 +79,23 @@ Livewire::component('component-name', ComponentClass::class);
 
 3. Check namespace and class name match.
 
+4. **For packages using `Route::livewire()` with `Livewire::addNamespace()`**:
+
+   When using namespace-based registration, `Route::livewire()` must use the string component name, not the class reference:
+
+   ```php
+   // Wrong - causes "Component not found" error
+   Route::livewire('/dashboard', Dashboard::class);
+
+   // Correct - use namespaced component name
+   Route::livewire('/dashboard', 'my-package::dashboard');
+   ```
+
+   The component name follows kebab-case convention:
+   - `Dashboard` → `my-package::dashboard`
+   - `UserIndex` → `my-package::user-index`
+   - `WorkflowShow` → `my-package::workflow-show`
+
 ### Property Not Reactive
 
 **Symptom**: Property changes but view doesn't update.

@@ -162,6 +162,21 @@ $this->dispatch('event');
 $this->dispatch('event')->to('component');
 ```
 
+## Routing Changes (Livewire 4)
+
+Full-page component routing now uses `Route::livewire()`:
+
+```php
+// Livewire 3
+Route::get('/dashboard', Dashboard::class);
+
+// Livewire 4 (recommended)
+Route::livewire('/dashboard', Dashboard::class);
+
+// For packages using Livewire::addNamespace(), use string component names:
+Route::livewire('/dashboard', 'my-package::dashboard');
+```
+
 ## Documentation Structure
 
 ```text

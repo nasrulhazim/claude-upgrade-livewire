@@ -177,6 +177,38 @@ use Livewire\Attributes\On;
 public function handleEvent(): void {}
 ```
 
+## Routing Changes (Livewire 4)
+
+### Full-Page Component Routing
+
+Livewire 4 introduces `Route::livewire()` for full-page components:
+
+**Livewire 3**:
+
+```php
+Route::get('/dashboard', Dashboard::class);
+```
+
+**Livewire 4**:
+
+```php
+Route::livewire('/dashboard', Dashboard::class);
+```
+
+The old `Route::get()` still works but `Route::livewire()` is required for single-file and multi-file components.
+
+### Package Routing with Namespaces
+
+When using `Livewire::addNamespace()`, routes must use string component names:
+
+```php
+// Wrong - will cause "Component not found" error
+Route::livewire('/dashboard', Dashboard::class);
+
+// Correct - use namespaced component name
+Route::livewire('/dashboard', 'my-package::dashboard');
+```
+
 ## Application Upgrade Steps
 
 ### 1. Create Backup Branch
@@ -312,11 +344,14 @@ Check for deprecated `emit()` calls in test assertions.
 - [ ] Cleared caches
 - [ ] Tests pass
 - [ ] Updated deprecated patterns
+- [ ] Updated full-page component routes to use `Route::livewire()` (if using Livewire 4 only)
 - [ ] Manual testing completed
 
 ### Package
 
 - [ ] Updated version constraint to `^3.0 || ^4.0`
+- [ ] Added version-aware component registration
+- [ ] Added version-aware routing for full-page components
 - [ ] Tests pass with Livewire 3
 - [ ] Tests pass with Livewire 4
 - [ ] CI updated for both versions

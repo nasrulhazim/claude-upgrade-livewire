@@ -191,6 +191,74 @@ protected function shouldUseLivewire4(string $version): bool
 
 This approach is more reliable than version string comparison because it tests actual capability.
 
+### Version-Aware Routing for Full-Page Components
+
+If your package registers full-page Livewire components (routes that render components directly), you need version-aware routing:
+
+```php
+// routes/my-package.php
+use Vendor\MyPackage\Livewire\Dashboard;
+use Vendor\MyPackage\Livewire\UserIndex;
+use Vendor\MyPackage\Livewire\UserShow;
+use Illuminate\Support\Facades\Route;
+
+// Determine routing method based on Livewire version
+$useLivewire4Routing = (function () {
+    $setting = config('my-package.livewire', 'auto');
+    if ($setting === 'v4') {
+        return true;
+    }
+    if ($setting === 'v3') {
+        return false;
+    }
+    // Auto-detect: Route::livewire() macro only exists in Livewire 4
+    return Route::hasMacro('livewire');
+})();
+
+Route::group([
+    'prefix' => config('my-package.path', 'my-package'),
+    'middleware' => config('my-package.middleware', ['web']),
+], function () use ($useLivewire4Routing) {
+    if ($useLivewire4Routing) {
+        // Livewire 4: Use Route::livewire() with namespaced component names
+        // IMPORTANT: Must use string component names, not class references
+        Route::livewire('/', 'my-package::dashboard')
+            ->name('my-package.dashboard');
+
+        Route::livewire('/users', 'my-package::user-index')
+            ->name('my-package.users.index');
+
+        Route::livewire('/users/{user}', 'my-package::user-show')
+            ->name('my-package.users.show');
+    } else {
+        // Livewire 3: Use Route::get() with class references
+        Route::get('/', Dashboard::class)
+            ->name('my-package.dashboard');
+
+        Route::get('/users', UserIndex::class)
+            ->name('my-package.users.index');
+
+        Route::get('/users/{user}', UserShow::class)
+            ->name('my-package.users.show');
+    }
+});
+```
+
+**Critical**: When using `Livewire::addNamespace()` for component registration in Livewire 4, `Route::livewire()` must use the namespaced component name string (e.g., `'my-package::dashboard'`) rather than the class reference. Using the class reference will cause a "Component not found" error.
+
+### Component Name Mapping
+
+The namespaced component name follows this pattern:
+
+| Class Name | Component Name |
+|------------|----------------|
+| `Dashboard` | `my-package::dashboard` |
+| `UserIndex` | `my-package::user-index` |
+| `UserShow` | `my-package::user-show` |
+| `ManageSettings` | `my-package::manage-settings` |
+
+The class name is converted to kebab-case after the namespace prefix.
+
 ### Version-Specific Code in Components
 
 If you must use version-specific code:
@@ -440,6 +508,8 @@ Both versions work identically in templates:
 
 - [ ] Updated version constraint to `^3.0 || ^4.0`
 - [ ] Reviewed components for compatibility
+- [ ] Added version-aware component registration (if applicable)
+- [ ] Added version-aware routing for full-page components (if applicable)
 - [ ] Tests pass with Livewire 3
 - [ ] Tests pass with Livewire 4
 - [ ] Static analysis passes

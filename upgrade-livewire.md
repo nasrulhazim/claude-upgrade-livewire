@@ -178,6 +178,32 @@ return [
 ];
 ```
 
+## Package-Specific: Version-Aware Routing
+
+For packages with full-page Livewire components, use version-aware routing:
+
+```php
+// routes/my-package.php
+$useLivewire4Routing = (function () {
+    $setting = config('my-package.livewire', 'auto');
+    if ($setting === 'v4') return true;
+    if ($setting === 'v3') return false;
+    return Route::hasMacro('livewire');
+})();
+
+Route::group(['prefix' => 'my-package'], function () use ($useLivewire4Routing) {
+    if ($useLivewire4Routing) {
+        // Livewire 4: Use Route::livewire() with namespaced names
+        Route::livewire('/', 'my-package::dashboard')->name('my-package.dashboard');
+    } else {
+        // Livewire 3: Use Route::get() with class references
+        Route::get('/', Dashboard::class)->name('my-package.dashboard');
+    }
+});
+```
+
+**Critical**: With `Livewire::addNamespace()`, `Route::livewire()` must use string component names (`'my-package::dashboard'`), not class references.
+
 ## Assessment Commands
 
 ### For Applications (search in `app/`)
@@ -195,7 +221,7 @@ grep -r "protected \$listeners" app/ --include="*.php"
 find app -name "*.php" -exec grep -l "extends Component" {} \; | wc -l
 ```
 
-### For Packages (search in `src/`)
+### For Packages (search in `src/` and `routes/`)
 
 ```bash
 # Find emit usage
@@ -212,6 +238,10 @@ find src -name "*.php" -exec grep -l "extends Component" {} \; | wc -l
 # Check current component registration pattern
 grep -r "Livewire::component" src/ --include="*.php"
 grep -r "Livewire::addNamespace" src/ --include="*.php"
+
+# Check for full-page component routes (need Route::livewire() in v4)
+grep -r "Route::get.*::class" routes/ --include="*.php"
+grep -r "Route::livewire" routes/ --include="*.php"
 ```
 
 ## Full Guide

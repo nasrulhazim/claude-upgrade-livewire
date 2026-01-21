@@ -207,6 +207,103 @@ In development, errors include more context:
 'debug' => env('APP_DEBUG', false),
 ```
 
+## Routing Changes
+
+### Full-Page Component Routing
+
+Livewire 4 introduces `Route::livewire()` as the preferred method for registering full-page components:
+
+**Livewire 3**:
+
+```php
+use App\Livewire\Dashboard;
+
+Route::get('/dashboard', Dashboard::class);
+```
+
+**Livewire 4 (recommended)**:
+
+```php
+use App\Livewire\Dashboard;
+
+Route::livewire('/dashboard', Dashboard::class);
+```
+
+The old `Route::get()` approach still works but `Route::livewire()` is required for:
+- Single-file components
+- Multi-file components
+- Proper routing behavior across all component architectures
+
+### Package Routing with Namespaces
+
+When packages use `Livewire::addNamespace()` for component registration, routes must use the namespaced component name (string) instead of the class reference:
+
+**Wrong (will fail)**:
+
+```php
+use Vendor\MyPackage\Livewire\Dashboard;
+
+// This won't work with addNamespace() registration
+Route::livewire('/dashboard', Dashboard::class);
+```
+
+**Correct**:
+
+```php
+// Use the namespaced component name
+Route::livewire('/dashboard', 'my-package::dashboard');
+Route::livewire('/users', 'my-package::user-index');
+```
+
+### Version-Aware Routing for Packages
+
+Packages supporting both Livewire 3 and 4 need conditional routing:
+
+```php
+// routes/my-package.php
+use Vendor\MyPackage\Livewire\Dashboard;
+use Illuminate\Support\Facades\Route;
+
+$useLivewire4Routing = (function () {
+    $setting = config('my-package.livewire', 'auto');
+    if ($setting === 'v4') {
+        return true;
+    }
+    if ($setting === 'v3') {
+        return false;
+    }
+    // Auto-detect: check if Route::livewire() macro exists
+    return Route::hasMacro('livewire');
+})();
+
+Route::group(['prefix' => 'my-package'], function () use ($useLivewire4Routing) {
+    if ($useLivewire4Routing) {
+        // Livewire 4: Use Route::livewire() with namespaced component names
+        Route::livewire('/', 'my-package::dashboard')->name('my-package.dashboard');
+        Route::livewire('/users', 'my-package::user-index')->name('my-package.users');
+    } else {
+        // Livewire 3: Use Route::get() with class references
+        Route::get('/', Dashboard::class)->name('my-package.dashboard');
+        Route::get('/users', UserIndex::class)->name('my-package.users');
+    }
+});
+```
+
+### Route Parameters
+
+Route parameters work the same way in both versions:
+
+```php
+// Both versions support route model binding
+Route::livewire('/users/{user}', 'my-package::user-show');
+
+// Component receives the parameter via mount()
+public function mount(User $user): void
+{
+    $this->user = $user;
+}
+```
+
 ## Performance
 
 ### Optimized Rendering
