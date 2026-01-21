@@ -154,7 +154,7 @@ protected function registerLivewireComponents(): void
         // Livewire 4: Register by namespace
         Livewire::addNamespace('my-package', classNamespace: 'Vendor\MyPackage\Livewire');
     } else {
-        // Livewire 3: Register individually
+        // Livewire 3: Register individually (using :: notation for consistency)
         Livewire::component('my-package::browser', Browser::class);
         Livewire::component('my-package::editor', Editor::class);
     }
@@ -169,6 +169,8 @@ protected function shouldUseLivewire4(string $version): bool
     };
 }
 ```
+
+**Important**: Use `::` (double colon) notation for Livewire 3 registration too! This ensures Blade views work consistently across both versions without modification.
 
 ### Package Config (config/my-package.php)
 
@@ -204,6 +206,76 @@ Route::group(['prefix' => 'my-package'], function () use ($useLivewire4Routing) 
 
 **Critical**: With `Livewire::addNamespace()`, `Route::livewire()` must use string component names (`'my-package::dashboard'`), not class references.
 
+## Package-Specific: Standardize on Double Colon (::) Notation
+
+**RECOMMENDED**: Use `::` (double colon) notation for **both** Livewire 3 and Livewire 4 component registration. This ensures Blade views work consistently across both versions.
+
+### The Problem
+
+By default, packages often use different naming conventions:
+
+| Registration Method | Traditional Format | Recommended Format |
+|---------------------|-------------------|-------------------|
+| `Livewire::component(...)` (v3) | `my-package.dashboard` (dot) | `my-package::dashboard` (double colon) |
+| `Livewire::addNamespace(...)` (v4) | N/A | `my-package::dashboard` (double colon) |
+
+### The Solution: Standardize on :: Notation
+
+**In your ServiceProvider**, use `::` notation for Livewire 3 registration:
+
+```php
+if ($this->shouldUseLivewire4($version)) {
+    // Livewire 4: Register by namespace
+    Livewire::addNamespace('my-package', classNamespace: 'Vendor\MyPackage\Livewire');
+} else {
+    // Livewire 3: Register individually (using :: notation for consistency!)
+    Livewire::component('my-package::dashboard', Dashboard::class);
+    Livewire::component('my-package::browser', Browser::class);
+    Livewire::component('my-package::editor', Editor::class);
+}
+```
+
+**In your Blade views**, always use `::` notation:
+
+```blade
+@livewire('my-package::create-workflow')
+@livewire('my-package::edit-workflow', ['workflow' => $workflow])
+<livewire:my-package::dashboard />
+```
+
+This approach means **zero Blade changes** when switching between Livewire 3 and 4!
+
+### Common Error
+
+```
+Livewire\Exceptions\ComponentNotFoundException
+Unable to find component: [my-package.create-workflow]
+```
+
+This error occurs when Blade views use dot notation but the package uses `::` notation in registration.
+
+### Migration Steps
+
+1. **Update ServiceProvider**: Change Livewire 3 registration from `.` to `::`
+2. **Update Blade views**: Change all `@livewire()` and `<livewire:>` calls from `.` to `::`
+
+### Find and Replace Commands
+
+```bash
+# Find all @livewire() calls using dot notation
+grep -r "@livewire('my-package\." resources/views/ --include="*.blade.php"
+
+# Find <livewire: tags using dot notation
+grep -r "<livewire:my-package\." resources/views/ --include="*.blade.php"
+
+# Batch replace in Blade views (macOS)
+find resources/views -name "*.blade.php" -exec sed -i '' "s/@livewire('my-package\./@livewire('my-package::/g" {} \;
+find resources/views -name "*.blade.php" -exec sed -i '' "s/<livewire:my-package\./<livewire:my-package::/g" {} \;
+
+# Batch replace in ServiceProvider (macOS)
+sed -i '' "s/Livewire::component('my-package\./Livewire::component('my-package::/g" src/MyPackageServiceProvider.php
+```
+
 ## Assessment Commands
 
 ### For Applications (search in `app/`)
@@ -221,7 +293,7 @@ grep -r "protected \$listeners" app/ --include="*.php"
 find app -name "*.php" -exec grep -l "extends Component" {} \; | wc -l
 ```
 
-### For Packages (search in `src/` and `routes/`)
+### For Packages (search in `src/`, `routes/`, and `resources/views/`)
 
 ```bash
 # Find emit usage
@@ -239,9 +311,18 @@ find src -name "*.php" -exec grep -l "extends Component" {} \; | wc -l
 grep -r "Livewire::component" src/ --include="*.php"
 grep -r "Livewire::addNamespace" src/ --include="*.php"
 
+# CRITICAL: Find Livewire 3 registrations using dot notation (need :: for consistency)
+grep -r "Livewire::component('[a-z-]*\." src/ --include="*.php"
+
 # Check for full-page component routes (need Route::livewire() in v4)
 grep -r "Route::get.*::class" routes/ --include="*.php"
 grep -r "Route::livewire" routes/ --include="*.php"
+
+# CRITICAL: Find @livewire() calls using dot notation (need :: for v4 namespace)
+grep -r "@livewire('[a-z-]*\." resources/views/ --include="*.blade.php"
+
+# Find <livewire: tags using dot notation
+grep -r "<livewire:[a-z-]*\." resources/views/ --include="*.blade.php"
 ```
 
 ## Full Guide

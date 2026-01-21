@@ -209,6 +209,82 @@ Route::livewire('/dashboard', Dashboard::class);
 Route::livewire('/dashboard', 'my-package::dashboard');
 ```
 
+## Standardize on Double Colon (::) Notation (Packages)
+
+**RECOMMENDED**: Use `::` (double colon) notation for **both** Livewire 3 and Livewire 4 component registration. This ensures Blade views work consistently across both versions without any changes.
+
+### Why Standardize?
+
+| Approach | Livewire 3 Registration | Livewire 4 Registration | Blade Views |
+|----------|------------------------|------------------------|-------------|
+| **Old (inconsistent)** | `pkg.component` | `pkg::component` | Must change |
+| **New (standardized)** | `pkg::component` | `pkg::component` | No changes needed |
+
+### ServiceProvider Registration
+
+```php
+protected function registerLivewireComponents(): void
+{
+    $version = config('my-package.livewire', 'auto');
+
+    if ($this->shouldUseLivewire4($version)) {
+        // Livewire 4: Register by namespace
+        Livewire::addNamespace('my-package', classNamespace: 'Vendor\MyPackage\Livewire');
+    } else {
+        // Livewire 3: Register individually (using :: notation for consistency!)
+        Livewire::component('my-package::dashboard', Dashboard::class);
+        Livewire::component('my-package::create-workflow', CreateWorkflow::class);
+        Livewire::component('my-package::edit-workflow', EditWorkflow::class);
+    }
+}
+```
+
+### Blade Views (Works for Both Versions)
+
+```blade
+{{-- These work with BOTH Livewire 3 and 4 when using :: notation --}}
+@livewire('my-package::create-workflow')
+@livewire('my-package::edit-workflow', ['item' => $item])
+@livewire('my-package::manage-metadata', ['item' => $item], key('meta-' . $item->id))
+<livewire:my-package::dashboard />
+```
+
+### Common Error
+
+```
+Livewire\Exceptions\ComponentNotFoundException
+Unable to find component: [my-package.create-workflow]
+```
+
+This error occurs when there's a mismatch between registration and Blade view naming.
+
+### Migration Steps
+
+1. **Update ServiceProvider**: Change Livewire 3 registration from `.` to `::`
+2. **Update Blade views**: Change all `@livewire()` and `<livewire:>` calls from `.` to `::`
+
+### Find and Replace Commands
+
+```bash
+# Find dot notation in Blade views
+grep -r "@livewire('my-package\." resources/views/ --include="*.blade.php"
+grep -r "<livewire:my-package\." resources/views/ --include="*.blade.php"
+
+# Find dot notation in ServiceProvider
+grep -r "Livewire::component('my-package\." src/ --include="*.php"
+
+# Batch replace in Blade views (macOS/BSD sed)
+find resources/views -name "*.blade.php" -exec sed -i '' "s/@livewire('my-package\./@livewire('my-package::/g" {} \;
+find resources/views -name "*.blade.php" -exec sed -i '' "s/<livewire:my-package\./<livewire:my-package::/g" {} \;
+
+# Batch replace in ServiceProvider (macOS/BSD sed)
+sed -i '' "s/Livewire::component('my-package\./Livewire::component('my-package::/g" src/*ServiceProvider.php
+
+# Batch replace (GNU/Linux sed - no '' after -i)
+find resources/views -name "*.blade.php" -exec sed -i "s/@livewire('my-package\./@livewire('my-package::/g" {} \;
+sed -i "s/Livewire::component('my-package\./Livewire::component('my-package::/g" src/*ServiceProvider.php
+```
+
 ## Application Upgrade Steps
 
 ### 1. Create Backup Branch
@@ -326,6 +402,26 @@ composer why-not livewire/livewire 4.0
 php artisan view:clear
 ```
 
+### Component Not Found with Package Namespace
+
+If you see an error like:
+
+```
+Unable to find component: [my-package.create-workflow]
+```
+
+This means your Blade views are using dot notation (`.`) but your package uses `Livewire::addNamespace()` which requires double colon notation (`::`).
+
+**Fix**: Update all `@livewire()` calls and `<livewire:>` tags:
+
+```blade
+{{-- Wrong --}}
+@livewire('my-package.create-workflow')
+
+{{-- Correct --}}
+@livewire('my-package::create-workflow')
+```
+
 ### Events Not Firing
 
 Ensure event names match exactly between dispatcher and listener.
@@ -351,7 +447,10 @@ Check for deprecated `emit()` calls in test assertions.
 
 - [ ] Updated version constraint to `^3.0 || ^4.0`
 - [ ] Added version-aware component registration
+- [ ] **Standardized Livewire 3 registration to use `::` notation** (e.g., `Livewire::component('pkg::component', ...)`)
 - [ ] Added version-aware routing for full-page components
+- [ ] Updated all `@livewire()` directives to use `::` notation (e.g., `my-package::component`)
+- [ ] Updated all `<livewire:>` tags to use `::` notation
 - [ ] Tests pass with Livewire 3
 - [ ] Tests pass with Livewire 4
 - [ ] CI updated for both versions

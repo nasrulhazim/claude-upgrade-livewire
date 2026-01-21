@@ -177,6 +177,28 @@ Route::livewire('/dashboard', Dashboard::class);
 Route::livewire('/dashboard', 'my-package::dashboard');
 ```
 
+## Standardize on :: Notation (Packages)
+
+**RECOMMENDED**: Use `::` notation for **both** Livewire 3 and 4 registration. This ensures zero Blade changes when switching versions.
+
+### ServiceProvider (Livewire 3)
+
+```php
+// Use :: notation for Livewire 3 too!
+Livewire::component('my-package::dashboard', Dashboard::class);
+Livewire::component('my-package::create-workflow', CreateWorkflow::class);
+```
+
+### Blade Views (Works for Both)
+
+```blade
+{{-- Same syntax works for Livewire 3 AND 4 --}}
+@livewire('my-package::create-workflow')
+<livewire:my-package::dashboard />
+```
+
+This standardization means **no Blade changes needed** when upgrading!
+
 ## Documentation Structure
 
 ```text
@@ -235,6 +257,14 @@ MIT License - see LICENSE file for details
 - [Laravel Documentation](https://laravel.com/docs)
 
 ## Changelog
+
+### v1.1.0 (2026-01-21)
+
+- **NEW**: Recommend standardizing on `::` notation for both Livewire 3 and 4 registration
+- Added documentation for ServiceProvider registration consistency
+- Added `ComponentNotFoundException` troubleshooting for package namespace issues
+- Updated package checklist with notation standardization checks
+- Added assessment commands for finding dot notation in ServiceProvider and Blade files
 
 ### v1.0.0 (2026-01-21)
 
